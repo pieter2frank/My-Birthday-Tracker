@@ -1,42 +1,66 @@
 {
   "expo": {
-    "name": "birthday-reminder",
+    "name": "My Birthday Tracker",
     "slug": "birthday-reminder",
-    "version": "1.0.0",
+    "version": "1.0.15",
     "orientation": "portrait",
-    "icon": "./assets/images/icon.png",
+    "icon": "./assets/images/icon-mbt.png",
     "scheme": "birthdayreminder",
     "userInterfaceStyle": "automatic",
+    "splash": {
+      "image": "./assets/images/splash-mbt2.png",
+      "resizeMode": "cover",
+      "backgroundColor": "#0f172a"
+    },
     "newArchEnabled": true,
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.pieter2frank.birthdayreminder",
+      "jsEngine": "hermes",
+      "splash": {
+        "image": "./assets/images/splash-mbt2.png",
+        "resizeMode": "cover",
+        "backgroundColor": "#0f172a"
+      }
     },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./assets/images/adaptive-icon.png",
-        "backgroundColor": "#ffffff"
+        "foregroundImage": "./assets/images/adaptive-icon-mbt.png",
+        "backgroundColor": "#0f172a"
       },
-      "edgeToEdgeEnabled": true
+      "permissions": ["SCHEDULE_EXACT_ALARM"],
+      "edgeToEdgeEnabled": true,
+      "package": "com.pieter2frank.birthdayreminder",
+      "versionCode": 15,
+      "jsEngine": "hermes",
+      "splash": {
+        "image": "./assets/images/splash-mbt2.png",
+        "resizeMode": "cover",
+        "backgroundColor": "#0f172a"
+      }
     },
     "web": {
       "bundler": "metro",
       "output": "static",
-      "favicon": "./assets/images/favicon.png"
+      "favicon": "./assets/images/favicon-32x32.png"
     },
     "plugins": [
+      ["expo-build-properties", {
+        "android": { "newArchEnabled": true },
+        "ios":     { "newArchEnabled": true }
+      }],
       "expo-router",
-      [
-        "expo-splash-screen",
-        {
-          "image": "./assets/images/splash-icon.png",
-          "imageWidth": 200,
-          "resizeMode": "contain",
-          "backgroundColor": "#ffffff"
-        }
-      ]
+      "expo-localization"
     ],
     "experiments": {
       "typedRoutes": true
-    }
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "5671d07d-15c4-4db5-85ba-cc78a50ff60b"
+      }
+    },
+    "owner": "pieter2frank"
   }
 }

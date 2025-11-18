@@ -539,8 +539,6 @@ function createStyles(C: ThemeColors) {
       color: C.text,
       borderWidth: 1,
       borderColor: C.inputBorder,
-      flex: 1,
-      paddingRight: 30, // ruimte voor het kruisje
     },
     filterRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 8, alignItems: 'center' },
     filterLabel: { color: C.textDim },

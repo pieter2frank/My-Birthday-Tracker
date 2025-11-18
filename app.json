@@ -2,9 +2,9 @@
   "expo": {
     "name": "My Birthday Tracker",
     "slug": "birthday-reminder",
-    "version": "1.0.15",
+    "version": "1.2.0",
     "orientation": "portrait",
-    "icon": "./assets/images/icon-mbt.png",
+    "icon": "./assets/images/icon-mbt2.png",
     "scheme": "birthdayreminder",
     "userInterfaceStyle": "automatic",
     "splash": {
@@ -15,7 +15,7 @@
     "newArchEnabled": true,
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.pieter2frank.birthdayreminder",
+      "bundleIdentifier": "app.mybirthdaytracker",
       "jsEngine": "hermes",
       "splash": {
         "image": "./assets/images/splash-mbt2.png",
@@ -25,13 +25,16 @@
     },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./assets/images/adaptive-icon-mbt.png",
+        "foregroundImage": "./assets/images/adaptive-icon-mbt2.png",
         "backgroundColor": "#0f172a"
       },
-      "permissions": ["SCHEDULE_EXACT_ALARM"],
+      "permissions": [
+        "SCHEDULE_EXACT_ALARM",
+        "POST_NOTIFICATIONS"
+      ],
       "edgeToEdgeEnabled": true,
       "package": "com.pieter2frank.birthdayreminder",
-      "versionCode": 15,
+      "versionCode": 120,
       "jsEngine": "hermes",
       "splash": {
         "image": "./assets/images/splash-mbt2.png",
@@ -45,12 +48,22 @@
       "favicon": "./assets/images/favicon-32x32.png"
     },
     "plugins": [
-      ["expo-build-properties", {
-        "android": { "newArchEnabled": true },
-        "ios":     { "newArchEnabled": true }
-      }],
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "newArchEnabled": true,
+            "enableProguardInReleaseBuilds": true,
+            "enableShrinkResources": true
+          },
+          "ios": {
+            "newArchEnabled": true
+          }
+        }
+      ],
       "expo-router",
-      "expo-localization"
+      "expo-localization",
+      "expo-web-browser"
     ],
     "experiments": {
       "typedRoutes": true
@@ -61,6 +74,6 @@
         "projectId": "5671d07d-15c4-4db5-85ba-cc78a50ff60b"
       }
     },
-    "owner": "pieter2frank"
+    "owner": "fascination"
   }
 }

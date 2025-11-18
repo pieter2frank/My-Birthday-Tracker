@@ -1,70 +1,61 @@
 // notifications.ts
 import * as Notifications from 'expo-notifications';
 import { Platform } from 'react-native';
+import { t, WEEKDAY_ABBR } from './i18n';
+import type { Locale, Person, Settings } from './types';
 
 // ───────────────────────────────────────────────────────────────────────────────
-// Types die je ook in index.tsx gebruikt
-export type EventType = 'birthday' | 'anniversary' | 'other';
-export type Locale = 'nl' | 'en';
-
-export type Person = {
-  id: string;
-  name: string;
-  type: EventType;
-  dateISO: string; // YYYY-MM-DD (geboortedatum/jubileumdatum)
-  label?: string;
-  sameDayReminder?: boolean; // optioneel per-persoon toggle
-};
-
-export type Settings = {
-  weeklySummaryEnabled: boolean;
-  weeklySummaryWeekday: number; // 1=Mon..7=Sun
-  weeklySummaryHour: number;
-  weeklySummaryMinute: number;
-  sameDayHour: number;
-  sameDayMinute: number;
-  locale: Locale;
-};
-
-// ───────────────────────────────────────────────────────────────────────────────
-// Notification handler (vereist om banners te tonen; foreground gedrag)
+// Notification handler
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
-    shouldShowBanner: true,
-    shouldShowList: true,
+    // NB: shouldShowAlert is the main one to show the notification
     shouldPlaySound: true,
     shouldSetBadge: false,
+
+    // these are iOS-specific options
+    shouldShowBanner: true,
+    shouldShowList: true,
   }),
 });
 
 // ───────────────────────────────────────────────────────────────────────────────
-// Permissions + Android kanalen
+// Permissions + Android channels
 export async function ensureNotifPerms(): Promise<boolean> {
-  const { status } = await Notifications.getPermissionsAsync();
-  if (status !== 'granted') {
-    const req = await Notifications.requestPermissionsAsync();
-    return req.status === 'granted';
+  try {
+    const { status } = await Notifications.getPermissionsAsync();
+    if (status !== 'granted') {
+      const req = await Notifications.requestPermissionsAsync();
+      return req.status === 'granted';
+    }
+    return true;
+  } catch (e) {
+    return false;
   }
-  return true;
 }
 
-export async function ensureAndroidChannels() {
+// export Android notification channels
+export async function ensureAndroidChannels(L: Locale) {
   if (Platform.OS !== 'android') return;
+  try {
+    await Notifications.setNotificationChannelAsync('daily-reminders', {
+      name: t(L, 'channelDailyReminders'), // i18n
+      importance: Notifications.AndroidImportance.HIGH,
+      sound: 'default',
+    });
 
-  await Notifications.setNotificationChannelAsync('daily-reminders', {
-    name: 'Daily Reminders',
-    importance: Notifications.AndroidImportance.HIGH,
-    sound: 'default',
-  });
-  await Notifications.setNotificationChannelAsync('weekly-summary', {
-    name: 'Weekly Summary',
-    importance: Notifications.AndroidImportance.DEFAULT,
-    sound: 'default',
-  });
+    await Notifications.setNotificationChannelAsync('weekly-summary', {
+      name: t(L, 'channelWeeklySummary'), // i18n
+      importance: Notifications.AndroidImportance.HIGH,
+      lockscreenVisibility: Notifications.AndroidNotificationVisibility.PUBLIC,
+      sound: 'default',
+    });
+  } catch (e) {
+    // swallow
+  }
 }
 
 // ───────────────────────────────────────────────────────────────────────────────
-// Datumhelpers
+// Date helpers
 function parseYmd(iso: string) {
   const [y, m, d] = iso.split('-').map(Number);
   return { y, m, d };
@@ -88,83 +79,150 @@ function ageOn(iso: string, at: Date) {
   return Math.max(0, had ? age : age - 1);
 }
 
+function sanitizeData(obj: any): any {
+  if (obj == null) return undefined;
+  if (obj instanceof Date) return obj.toISOString();
+  if (Array.isArray(obj)) return obj.map(sanitizeData).filter(v => v !== undefined);
+  if (typeof obj === 'object') {
+    const out: Record<string, any> = {};
+    for (const k of Object.keys(obj)) {
+      const v = sanitizeData(obj[k]);
+      if (v !== undefined) out[k] = v; // skip undefined
+    }
+    return out;
+  }
+  if (typeof obj === 'function') return undefined;
+  return obj; // string/number/boolean ok
+}
+
+// TZ-veilige lokale dag-sleutel (ipv toISOString)
+function keyOfLocalDay(d: Date): string {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const dd = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${dd}`;
+}
+
 // ───────────────────────────────────────────────────────────────────────────────
-// Tekstopbouw
+// Inline time field that opens the native time picker and returns new hour/minute
 function buildDailyBody(atDate: Date, persons: Person[], L: Locale): string | null {
   if (persons.length === 0) return null;
-  const names = persons.map(p => {
+
+  const lines = persons.map(p => {
     const emoji = p.type === 'birthday' ? '🎂' : p.type === 'anniversary' ? '💍' : '🎉';
     const yrs = ageOn(p.dateISO, atDate);
-    const yrsText = L === 'nl' ? `${yrs} jaar` : `${yrs} years`;
-    return `${p.name} ${emoji} ${yrsText}`;
+    const yrsText = t(L, 'ageYears', { count: yrs }); // i18n met parameter
+    return `‣ ${p.name} (${yrsText}) ${emoji}`;
   });
-  if (names.length === 1) {
-    return L === 'nl' ? `🎂 Feest vandaag! 🎂 ${names[0]}` : `🎂 Time to celebrate! 🎂: ${names[0]}`;
-  }
-  const last = names.pop();
-  return L === 'nl'
-    ? `Feliciteer vandaag: ${names.join(', ')} en ${last}`
-    : `Send your best wishes to: ${names.join(', ')} and ${last}`;
+  return `\n${lines.join('\n')}`;
 }
 
 function buildWeeklyBody(startDate: Date, people: Person[], L: Locale): string | null {
   if (people.length === 0) return null;
-  const map: Record<string, Person[]> = {};
-  people.forEach(p => {
+
+  const byDay: Record<string, Person[]> = {};
+  for (const p of people) {
     const { m, d } = parseYmd(p.dateISO);
-    const day = new Date(startDate.getFullYear(), (m ?? 1)-1, d ?? 1);
-    const key = new Date(day.getFullYear(), day.getMonth(), day.getDate()).toISOString();
-    (map[key] ??= []).push(p);
-  });
-  const dayNames = L === 'nl' ? ['zo','ma','di','wo','do','vr','za'] : ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
-  const entries: string[] = [];
-  Object.keys(map).sort().forEach(key => {
-    const day = new Date(key);
-    const dn = dayNames[day.getDay()];
-    const month = L === 'nl'
-      ? `${day.getDate()} ${day.toLocaleDateString('nl-NL', { month: 'short' })}`
-      : `${day.toLocaleDateString('en-US', { month: 'short' })} ${day.getDate()}`;
-    const txt = map[key].map(p => {
+    const day = new Date(startDate.getFullYear(), (m ?? 1) - 1, d ?? 1, 0, 0, 0, 0); // middernacht
+    const key = keyOfLocalDay(day); // ✅ lokale key
+    (byDay[key] ??= []).push(p);
+  }
+
+  const dayAbbr = WEEKDAY_ABBR[L];
+
+  const lines: string[] = [];
+  Object.keys(byDay).sort().forEach(key => {
+    const [yy, mm, dd] = key.split('-').map(Number);
+    const day = new Date(yy, (mm ?? 1) - 1, dd ?? 1, 0, 0, 0, 0);
+    const dn = dayAbbr[day.getDay()]; // 0..6 (JS)
+
+    const shortMonth = (day.toLocaleDateString(L === 'nl' ? 'nl-NL' : L === 'de' ? 'de-DE' : 'en-US', { month: 'short' }) || '')
+      .replace(/\.$/, '');
+
+    const monthPart = L === 'nl' ? `${day.getDate()} ${shortMonth}` : `${shortMonth} ${day.getDate()}`;
+
+    const peopleTxt = byDay[key].map(p => {
       const emoji = p.type === 'birthday' ? '🎂' : p.type === 'anniversary' ? '💍' : '🎉';
       const yrs = ageOn(p.dateISO, day);
-      return `${p.name} (${emoji} ${yrs})`;
+      const yrsText = t(L, 'ageYears', { count: yrs });
+      return `‣ ${p.name} (${yrsText}) ${emoji}`;
     }).join(', ');
-    entries.push(`${dn} ${month}: ${txt}`);
+
+    lines.push(`${dn} ${monthPart}: ${peopleTxt}`);
   });
-  return L === 'nl' ? `Deze week: ${entries.join('; ')}` : `This week: ${entries.join('; ')}`;
+
+  return `\n${lines.join('\n')}`;
 }
 
-// ───────────────────────────────────────────────────────────────────────────────
-// Veilig schedulen: voorkom 'immediate fire' door mis-parse/afronding in SDK 52
-async function scheduleSafe(req: Notifications.NotificationRequestInput) {
-  // NB: trigger mag een Date zijn of een schedulable trigger (DATE, DAILY, etc.)
-  const trigger = req.trigger as Notifications.SchedulableNotificationTriggerInput | Date | number;
 
-  // Probeer te achterhalen wat de native laag als "volgende tijd" ziet
-  let next: number | null = null;
-  try {
-    next = await Notifications.getNextTriggerDateAsync(trigger as any);
-  } catch {
-    // Sommige vormen (Date/number) kunnen throwen op oudere clients; negeren
+// ───────────────────────────────────────────────────────────────────────────────
+// safe schedule wrapper (for Android trigger normalization)
+async function scheduleSafe(req: Notifications.NotificationRequestInput) {
+  const orig = req.trigger as Notifications.SchedulableNotificationTriggerInput | Date | number | any;
+
+  // calculate millis
+  let millis: number | null = null;
+  if (orig instanceof Date) millis = orig.getTime();
+  else if (typeof orig === 'number') millis = orig;
+  else if (orig && typeof orig === 'object' && 'date' in orig) {
+    const d = (orig as any).date;
+    millis = d instanceof Date ? d.getTime() : (typeof d === 'number' ? d : null);
   }
 
-  const targetMs =
-    trigger instanceof Date ? trigger.getTime()
-    : typeof trigger === 'number' ? trigger
-    : next ?? 0;
+  // channel hint   
+  const hintedChannel =
+    (req.content as any)?.android?.channelId ??
+    (req as any)?.android?.channelId ??
+    undefined;
 
-  // 1s marge om "nu" (afrondingsfouten/klok drift) te ontwijken
-  if (!targetMs || targetMs <= Date.now() + 1000) {
-    // niets plannen; dit zou anders "fire now" kunnen geven
+  // trigger normalization
+  let normalizedTrigger: Notifications.SchedulableNotificationTriggerInput | Date | number = orig;
+  if (Platform.OS === 'android') {
+    if (typeof millis === 'number' && Number.isFinite(millis)) {
+      const origObj = (orig && typeof orig === 'object') ? orig as any : {};
+      normalizedTrigger = {
+        // keep other properties
+        ...origObj,
+        // force type = DATE
+        type: Notifications.SchedulableTriggerInputTypes.DATE,
+        // force date = millis
+        date: Math.floor(millis),
+        // if no channelId yet, use hintedChannel (indirect via content or req)
+        ...(origObj.channelId ? {} :
+          (hintedChannel ? { channelId: hintedChannel } : {})),
+      } as Notifications.DateTriggerInput;
+    } else {
+      return null;
+    }
+  } else {
+    normalizedTrigger = (typeof millis === 'number' ? new Date(millis) : orig);
+  }
+
+  // clean content (remove channelId from content)
+  const cleanedContent: Notifications.NotificationContentInput = (() => {
+    const c: any = { ...req.content };
+    if (c?.android?.channelId) {
+      c.android = { ...c.android };
+      delete c.android.channelId; 
+    }
+    if ('data' in c) c.data = sanitizeData(c.data);
+    return c;
+  })();
+
+  try {
+    const id = await Notifications.scheduleNotificationAsync({
+      ...req,
+      content: cleanedContent,
+      trigger: normalizedTrigger,
+    });
+    return id;
+  } catch (e) {
     return null;
   }
-
-  return Notifications.scheduleNotificationAsync(req);
 }
 
 // ───────────────────────────────────────────────────────────────────────────────
-// Kern: plannen dag / week
-
+// Planning routines
 async function scheduleDaily(settings: Settings, people: Person[], L: Locale) {
   const horizonDays = Platform.OS === 'ios' ? 30 : 60;
   const now = new Date();
@@ -173,7 +231,9 @@ async function scheduleDaily(settings: Settings, people: Person[], L: Locale) {
     const day = new Date();
     day.setDate(now.getDate() + i);
     const at = setTimeToDate(day, settings.sameDayHour, settings.sameDayMinute);
-    if (at <= now) continue;
+    if (at <= now) {
+      continue;
+    }
 
     const todays = people.filter(p => {
       const occ = nextOccurrence(p.dateISO, day);
@@ -181,100 +241,176 @@ async function scheduleDaily(settings: Settings, people: Person[], L: Locale) {
           && occ.getDate()  === day.getDate()
           && (p.sameDayReminder ?? true);
     });
+
     if (todays.length === 0) continue;
 
     const body = buildDailyBody(day, todays, L);
-    if (!body) continue;
+    if (!body) {
+      continue;
+    }
 
-    await scheduleSafe({
+    const id = await scheduleSafe({
       content: {
-        title: L === 'nl' ? 'Vandaag' : 'Today',
+        title: t(L, 'notifDailyTitle'),
         body,
-        data: { type: 'daily-reminder', date: at.toISOString(), personIds: todays.map(p => p.id) },
-        ...(Platform.OS === 'android' && { android: { channelId: 'daily-reminders' } }),
       },
-      // Gebruik een echte Date als trigger (fix voor 'fire now' in SDK 52)
-      trigger: at,
+      trigger: Platform.OS === 'android'
+        ? ({
+            type: Notifications.SchedulableTriggerInputTypes.DATE,
+            date: at.getTime(),
+            channelId: 'daily-reminders',
+          } as Notifications.DateTriggerInput)
+        : at,
     });
+
+    if (!id) {
+      // swallow
+    }
   }
 }
 
-function nextAnchorForWeekday(weekdaySetting: number, hour: number, minute: number, now = new Date()) {
-  // 1..7 (Mon..Sun) → JS 0..6 (Sun..Sat)
-  const jsDow = (weekdaySetting % 7); // 0 = Sunday
-  const anchor = new Date(now.getFullYear(), now.getMonth(), now.getDate(), hour, minute, 0, 0);
-  // loop tot we op de gewenste weekday & toekomst zitten
-  while (anchor.getDay() !== jsDow || anchor <= now) {
-    anchor.setDate(anchor.getDate() + 1);
+function settingsWeekdayToMon0(settingsWeekday: number): number {
+  // change sun=1, mon=2, ... sat=7 om naar Mon0: mon=0..sun=6
+  // Formulas : (1 + 5) % 7 = 6 (sun)
+  // (2 + 5) % 7 = 0 (mon)
+  // (3 + 5) % 7 = 1 (tue)
+  // ...
+  return (settingsWeekday + 5) % 7;
+}
+
+function nextAnchorForWeekdayMon0(
+  weekdayMon0: number,  // 0=ma..6=zo
+  hour: number,
+  minute: number,
+  now = new Date()
+) {
+  // Mon0 → JS getDay() (0=zo..6=za)
+  const targetJs = (weekdayMon0 + 1) % 7;
+
+  const todayJs = now.getDay();
+
+  const todayAt = new Date(
+    now.getFullYear(),
+    now.getMonth(),
+    now.getDate(),
+    hour,
+    minute,
+    0,
+    0
+  );
+
+  // How many days ahead is the target weekday?
+  let daysAhead = (targetJs - todayJs + 7) % 7;
+
+  // if today is the day, but time has passed, go to next week
+  if (daysAhead === 0 && todayAt <= now) {
+    daysAhead = 7;
   }
+
+  const anchor = new Date(todayAt);
+  anchor.setDate(anchor.getDate() + daysAhead);
   return anchor;
 }
 
 async function scheduleWeekly(settings: Settings, people: Person[], L: Locale) {
-  if (!settings.weeklySummaryEnabled) return;
-
   const horizonWeeks = Platform.OS === 'ios' ? 8 : 12;
   const now = new Date();
-  const first = nextAnchorForWeekday(
-    settings.weeklySummaryWeekday,
+  const DAY = 24 * 60 * 60 * 1000;
+  const weekdayMon0 = settingsWeekdayToMon0(settings.weeklySummaryWeekday);
+
+  const first = nextAnchorForWeekdayMon0(
+    weekdayMon0,
     settings.weeklySummaryHour,
     settings.weeklySummaryMinute,
     now
   );
 
   for (let i = 0; i < horizonWeeks; i++) {
-    const when = new Date(first.getTime() + i * 7 * 24 * 60 * 60 * 1000);
+    const when = new Date(first.getTime() + i * DAY * 7);
     if (when <= now) continue;
 
-    const weekStart = new Date(when);
-    const weekEnd = new Date(when.getTime() + 7 * 24 * 60 * 60 * 1000);
+    // days in the week starting from 'when'
+    const weekStart = new Date(
+      when.getFullYear(),
+      when.getMonth(),
+      when.getDate() + 1,
+      0,
+      0,
+      0,
+      0
+    );
+    const weekEnd = new Date(weekStart.getTime() + 7 * DAY);
 
-    const weekEvents = people.filter(p => {
+    const weekEvents = people.filter((p) => {
       const { m, d } = parseYmd(p.dateISO);
-      const day = new Date(when.getFullYear(), (m ?? 1)-1, d ?? 1, 12, 0, 0, 0);
-      return day >= weekStart && day < weekEnd;
+      const dayLocalMidnight = new Date(
+        when.getFullYear(),
+        (m ?? 1) - 1,
+        d ?? 1,
+        0,
+        0,
+        0,
+        0
+      );
+      return dayLocalMidnight >= weekStart && dayLocalMidnight < weekEnd;
     });
+
     if (weekEvents.length === 0) continue;
 
     const body = buildWeeklyBody(weekStart, weekEvents, L);
     if (!body) continue;
 
-    await scheduleSafe({
-      content: {
-        title: L === 'nl' ? 'Overzicht komende week' : 'This week',
-        body,
-        data: { type: 'weekly-summary', anchor: when.toISOString() },
-        ...(Platform.OS === 'android' && { android: { channelId: 'weekly-summary' } }),
-      },
-      // Fix: Date als trigger (of expliciet type: DATE)
-      trigger: when,
+    // Simple debug per ingeplande weekly
+    //console.log(
+    //  `-TRIGGER: weekdaySetting=${settings.weeklySummaryWeekday} weekdayMon0=${weekdayMon0} hour=${settings.weeklySummaryHour} min=${settings.weeklySummaryMinute} now=${now.toISOString()} first=${first.toISOString()} when=${when.toISOString()} body=${body}`
+    //);
+
+    const id = await scheduleSafe({
+      content: { title: t(L, 'notifWeeklyTitle'), body },
+      trigger:
+        Platform.OS === 'android'
+          ? ({
+              type: Notifications.SchedulableTriggerInputTypes.DATE,
+              date: when,
+              channelId: 'weekly-summary',
+            } as Notifications.DateTriggerInput)
+          : when,
     });
+
+    if (!id) {
+      /* swallow */
+    }
   }
 }
 
-// ───────────────────────────────────────────────────────────────────────────────
-// Publieke API
-
+// Public routines
 export async function clearAllScheduled() {
   try {
     await Notifications.cancelAllScheduledNotificationsAsync();
-  } catch {
-    // ignore
+  } catch (e) {
+    // swallow
   }
 }
 
 export async function rescheduleAllNotifications(settings: Settings, people: Person[], L: Locale) {
   const ok = await ensureNotifPerms();
-  if (!ok) return;
+  if (!ok) {
+    return;
+  }
 
-  await ensureAndroidChannels();
+  await ensureAndroidChannels(settings.locale);
+
   await clearAllScheduled();
 
-  await scheduleWeekly(settings, people, L);
-  await scheduleDaily(settings, people, L);
+  try {
+    await scheduleWeekly(settings, people, L);
+    await scheduleDaily(settings, people, L);
+  } catch (e: unknown) {
+    // swallow
+  }
 }
 
-// Utility: signature voor idempotent rescheduling vanuit index.tsx
+// Utility: signature for current notification setup
 export function buildNotificationSignature(settings: Settings, people: Person[]) {
   const base =
     `${settings.weeklySummaryEnabled}|${settings.weeklySummaryWeekday}|${settings.weeklySummaryHour}|${settings.weeklySummaryMinute}|${settings.sameDayHour}|${settings.sameDayMinute}|${settings.locale}`;
@@ -283,19 +419,4 @@ export function buildNotificationSignature(settings: Settings, people: Person[])
     .sort()
     .join(';');
   return base + '||' + ppl;
-}
-
-// (Optioneel) debughulp
-export async function debugScheduledNotifications() {
-  const all = await Notifications.getAllScheduledNotificationsAsync();
-  console.log('[notifications] scheduled count:', all.length);
-  for (const n of all) {
-    // probeer de volgende trigger te berekenen voor logging
-    try {
-      const next = await Notifications.getNextTriggerDateAsync(n.trigger as any);
-      console.log(' • id:', (n as any).identifier, 'next:', next ? new Date(next).toISOString() : null);
-    } catch {
-      console.log(' • id:', (n as any).identifier, 'next: (unavailable)');
-    }
-  }
 }

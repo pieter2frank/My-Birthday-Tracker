@@ -1,0 +1,285 @@
+import { StyleSheet } from 'react-native';
+
+// ============== Theme Palette ==============
+export const THEME = {
+  dark: {
+    bg: '#0f172a',
+    cardBg: 'rgba(255,255,255,0.04)',
+    cardBorder: 'rgba(255,255,255,0.10)',
+    text: 'white',
+    textDim: '#cbd5e1',
+    textMuted: '#9ca3af',
+    pillBg: 'rgba(255,255,255,0.04)',
+    pillBorder: 'rgba(255,255,255,0.18)',
+    pillActiveBg: 'rgba(34,197,94,0.12)',
+    pillActiveBorder: 'rgba(34,197,94,0.45)',
+    inputBg: 'rgba(255,255,255,0.08)',
+    inputBorder: 'rgba(255,255,255,0.14)',
+    filterBg: 'rgba(255,255,255,0.06)',
+    filterBorder: 'rgba(255,255,255,0.08)',
+    bottomBarBg: 'rgba(15,23,42,0.96)',
+    bottomBarBorder: 'rgba(255,255,255,0.08)',
+    btnBg: 'rgba(255,255,255,0.06)',
+    btnBorder: 'rgba(255,255,255,0.16)',
+    link: '#25D366',
+    accent: '#22c55e',
+    modalBg: '#0b1224',
+    modalBorder: 'rgba(255,255,255,0.10)',
+    placeholder: '#94a3b8',
+    highlightTodayBg: 'rgba(37,211,102,0.08)',
+    highlightTodayBorder: 'rgba(37,211,102,0.35)',
+    switchTrackOff: 'rgba(255,255,255,0.15)',
+    switchTrackOn: 'rgba(34,197,94,0.55)',
+    switchDot: '#FFFFFF',
+    switchDotBorder: 'rgba(255,255,255,0.28)',
+    iconPrimary: '#e5e7eb',
+    iconSecondary: '#d1d5db',
+    iconAccent: '#ffffff',
+  },
+  light: {
+    bg: '#f8fafc',
+    cardBg: '#ffffff',
+    cardBorder: '#e2e8f0',
+    text: '#0f172a',
+    textDim: '#334155',
+    textMuted: '#64748b',
+    pillBg: '#f1f5f9',
+    pillBorder: '#e2e8f0',
+    pillActiveBg: 'rgba(34,197,94,0.14)',
+    pillActiveBorder: 'rgba(39, 91, 58, 0.55)',
+    inputBg: '#ffffff',
+    inputBorder: '#e2e8f0',
+    filterBg: '#ffffff',
+    filterBorder: '#e2e8f0',
+    bottomBarBg: 'rgba(255,255,255,0.96)',
+    bottomBarBorder: '#e2e8f0',
+    btnBg: '#ffffff',
+    btnBorder: '#e2e8f0',
+    link: '#16a34a',
+    accent: '#22c55e',
+    modalBg: '#ffffff',
+    modalBorder: '#e2e8f0',
+    placeholder: '#94a3b8',
+    highlightTodayBg: 'rgba(34,197,94,0.10)',
+    highlightTodayBorder: 'rgba(34,197,94,0.40)',
+    switchTrackOff: '#e5e7eb',
+    switchTrackOn: '#22c55e',
+    switchDot: '#FFFFFF',
+    switchDotBorder: 'rgba(255, 255, 255, 1)',
+    iconSecondary: '#ffffffff',
+    iconAccent: '#ffffff',
+  },
+} as const;
+
+export type ThemeColors = typeof THEME.dark;
+
+// Builds the screen’s StyleSheet dynamically from the current theme colors.
+export function createStyles(C: ThemeColors) {
+  return StyleSheet.create({
+    safe: { flex: 1, backgroundColor: C.bg },
+    topBar: { paddingHorizontal: 16, paddingTop: 34, paddingBottom: 8 },
+    h1: { color: C.text, fontSize: 24, fontWeight: '800' },
+    h2: { color: C.text, fontSize: 18, fontWeight: '800', marginTop: 16, marginHorizontal: 16, marginBottom: 8 },
+    h3: { color: C.text, fontSize: 18, fontWeight: '800', marginBottom: 8 },
+
+    filterBar: {
+      backgroundColor: C.filterBg,
+      borderRadius: 16,
+      padding: 12,
+      marginHorizontal: 16,
+      marginBottom: 12,
+      borderWidth: 1,
+      borderColor: C.filterBorder,
+    },
+    searchInput: {
+      backgroundColor: C.inputBg,
+      borderRadius: 12,
+      paddingHorizontal: 12,
+      paddingVertical: 10,
+      color: C.text,
+      borderWidth: 1,
+      borderColor: C.inputBorder,
+      flex: 1,
+      paddingRight: 30, // the cross icon space
+    },
+    filterRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 8, alignItems: 'center' },
+    filterLabel: { color: C.textDim },
+
+    pill: {
+      paddingHorizontal: 12, paddingVertical: 6, borderRadius: 999,
+      borderWidth: 1, borderColor: C.pillBorder, backgroundColor: C.pillBg,
+    },
+    pillSm: {
+      paddingHorizontal: 10, paddingVertical: 4, borderRadius: 999,
+      borderWidth: 1, borderColor: C.pillBorder, backgroundColor: C.pillBg,
+    },
+    pillActive: { borderColor: C.pillActiveBorder, backgroundColor: C.pillActiveBg },
+    pillText: { color: C.textDim, fontWeight: '600' },
+    pillTextSm: { color: C.textDim },
+    pillTextActive: { color: C.text },
+
+    personRow: {
+      marginHorizontal: 16,
+      marginBottom: 8,
+      borderRadius: 14,
+      borderWidth: 1,
+      borderColor: C.cardBorder,
+      backgroundColor: C.cardBg,
+      padding: 0,
+    },
+
+    rowClip: {
+      borderRadius: 14,
+      overflow: 'hidden',
+      padding: 12,
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 10,
+      position: 'relative',
+    },
+    personName: { color: C.text, fontSize: 16, fontWeight: '700' },
+    personSub: { color: C.textDim },
+
+    rowToday: {
+      backgroundColor: C.highlightTodayBg,
+      borderColor: C.highlightTodayBorder,
+    },
+    todayStripe: {
+      position: 'absolute',
+      left: 0,
+      top: 0,
+      bottom: 0,
+      width: 6,
+      backgroundColor: '#25D366',
+    },
+    rowNameToday: { fontWeight: '700' },
+    rowSubtitleToday: { opacity: 0.95 },
+
+    rowActions: { flexDirection: 'row', alignItems: 'center' },
+    iconBtn: {
+      width: 36, height: 36, alignItems: 'center', justifyContent: 'center',
+      borderRadius: 10, marginLeft: 8, backgroundColor: C.btnBg,
+      borderWidth: 1, borderColor: C.btnBorder,
+    },
+    rowBtn: {
+      borderWidth: 1, borderColor: C.btnBorder, paddingVertical: 6, paddingHorizontal: 10, borderRadius: 10,
+      backgroundColor: C.btnBg,
+    },
+    rowBtnText: { color: C.text, fontWeight: '700' },
+    empty: { color: C.textMuted, marginHorizontal: 16, marginBottom: 6 },
+
+    settingRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 14 },
+    settingLabel: { color: C.text, fontWeight: '700' },
+    numInput: {
+      width: 56, paddingVertical: 8, paddingHorizontal: 10,
+      borderRadius: 12, borderWidth: 1, borderColor: C.inputBorder,
+      color: C.text, backgroundColor: C.inputBg, textAlign: 'center'
+    },
+    timeBtn: {
+      backgroundColor: C.inputBg,
+      borderRadius: 12, paddingHorizontal: 12, paddingVertical: 10,
+      borderWidth: 1, borderColor: C.inputBorder,
+    },
+    timeBtnText: { color: C.text, fontWeight: '600' },
+
+    switchBtn: {
+      width: 52,
+      height: 30,
+      borderRadius: 999,
+      padding: 3,
+      justifyContent: 'center',
+      backgroundColor: C.switchTrackOff,
+      borderWidth: 1,
+      borderColor: C.btnBorder,
+    },
+    switchOn: {
+      backgroundColor: C.switchTrackOn,
+      borderColor: 'transparent',
+    },
+    switchDot: {
+      width: 24,
+      height: 24,
+      borderRadius: 999,
+      backgroundColor: C.switchDot,
+      borderWidth: 1,
+      borderColor: C.switchDotBorder,
+      transform: [{ translateX: 0 }],
+      shadowColor: '#000',
+      shadowOpacity: 0.15,
+      shadowRadius: 2,
+      shadowOffset: { width: 0, height: 1 },
+      elevation: 1,
+    },
+    switchDotOn: { transform: [{ translateX: 22 }] },
+
+    bottomBar: { position: 'absolute', left: 0, right: 0, bottom: 0, paddingHorizontal: 16, paddingTop: 10, paddingBottom: 14, backgroundColor: C.bottomBarBg, borderTopWidth: 1, borderTopColor: C.bottomBarBorder },
+    bottomActions: { flexDirection: 'row', gap: 8, justifyContent: 'space-between' },
+    bottomBtn: { flex: 1, alignItems: 'center', paddingVertical: 10, borderRadius: 12, borderWidth: 1, borderColor: C.btnBorder, backgroundColor: C.btnBg },
+    bottomBtnAccent: { backgroundColor: C.accent, borderColor: C.accent },
+    bottomBtnText: { color: C.text, fontWeight: '700', textAlign: 'center' },
+
+    modalBackdrop: {
+      ...StyleSheet.absoluteFillObject,
+      justifyContent: 'center',
+      padding: 16,
+      backgroundColor: 'rgba(0,0,0,0.35)',
+    },
+    modalCard: {
+      borderRadius: 18,
+      backgroundColor: C.modalBg,
+      borderWidth: 1,
+      borderColor: C.modalBorder,
+      padding: 16,
+    },
+
+    titleRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 10 },
+    titleIcon: { height: 24, width: 24 },
+
+    modalCloseBtn: { alignSelf: 'flex-end', paddingHorizontal: 16, paddingVertical: 10, borderRadius: 12, backgroundColor: C.btnBg, borderWidth: 1, borderColor: C.btnBorder, flexGrow: 0, flexShrink: 0 },
+    modalCloseText: { color: C.text, fontWeight: '700', textAlign: 'center' },
+
+    inputLabel: {
+      color: C.text,
+      fontWeight: '700',
+      marginTop: 12,
+      marginBottom: 6,
+    },
+    input: {
+      backgroundColor: C.inputBg,
+      borderColor: C.inputBorder,
+      color: C.text,
+      borderWidth: 1,
+      borderRadius: 12,
+      paddingHorizontal: 12,
+      paddingVertical: 10,
+    },
+
+    weekdaySection: { marginTop: 10 },
+    weekdayRow: {
+      flexDirection: 'row',
+      flexWrap: 'nowrap',
+      gap: 8,
+      alignItems: 'center',
+      marginTop: 10
+    },
+    weekdayCell: {
+      flex: 1,
+      paddingVertical: 6,
+      borderRadius: 999,
+      borderWidth: 1,
+      alignItems: 'center',
+      justifyContent: 'center',
+      minWidth: 0,
+    },
+    weekdayCellText: { fontWeight: '600', fontSize: 16 },
+
+    footerLink: {
+      textAlign: 'center',
+      fontSize: 12,
+      color: C.link,
+      marginTop: 8,
+      textDecorationLine: 'none',
+      marginBottom: 10,
+    }
+  });
+}

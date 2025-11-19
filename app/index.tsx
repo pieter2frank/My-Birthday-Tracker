@@ -827,19 +827,6 @@ export default function Index() {
               </TouchableOpacity>
             </View>
 
-            {/* row 2: TEST-knop – altijd zichtbaar, volle breedte */}
-            <View style={{ marginTop: 8 }}>
-              <TouchableOpacity
-                style={[styles.bottomBtn, styles.bottomBtnAccent]}
-                onPress={switchToFreeForTesting}
-                accessibilityRole="button"
-              >
-                <Text style={[styles.bottomBtnText, { color: 'white' }]}>
-                  {t(L, 'debugSwitchToFree')}
-                </Text>
-              </TouchableOpacity>
-            </View>
-
           </View>
         </BlurView>
       </Modal>

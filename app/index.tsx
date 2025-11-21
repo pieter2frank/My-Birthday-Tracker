@@ -666,7 +666,13 @@ export default function Index() {
             )}
 
             <Text style={styles.inputLabel}>{t(L, 'dateLabel')}</Text>
-            <DatePickerField valueISO={editingPerson?.dateISO ?? toISODateLocal(new Date())} onChange={iso => setEditingPerson(e => e ? { ...e, dateISO: iso } : e)} styles={styles}/>
+            <DatePickerField
+              valueISO={editingPerson?.dateISO ?? toISODateLocal(new Date())}
+              onChange={iso => setEditingPerson(e => e ? { ...e, dateISO: iso } : e)}
+              styles={styles}
+              C={C}
+              themeVariant={effectiveTheme}
+            />
 
             <View style={[styles.settingRow, { marginTop: 12 }]}>
               <Text style={styles.settingLabel}>{t(L, 'sameDay')}</Text>
@@ -741,7 +747,8 @@ export default function Index() {
               <Text style={styles.settingLabel}>{t(L, 'time')}</Text>
               <TimePickerButton hour={settings.weeklySummaryHour} minute={settings.weeklySummaryMinute} onChange={(h, m) => setSettings(s => ({ ...s, weeklySummaryHour: h, weeklySummaryMinute: m }))} 
                 styles={styles}
-                C={C}             
+                C={C}
+                themeVariant={effectiveTheme}             
               />
             </View>
 
@@ -749,7 +756,8 @@ export default function Index() {
               <Text style={styles.settingLabel}>{t(L, 'daytime')}</Text>
               <TimePickerButton hour={settings.sameDayHour} minute={settings.sameDayMinute} onChange={(h, m) => setSettings(s => ({ ...s, sameDayHour: h, sameDayMinute: m }))} 
                 styles={styles}
-                C={C}               
+                C={C}   
+                themeVariant={effectiveTheme}            
               />
             </View>
 

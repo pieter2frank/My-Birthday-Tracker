@@ -2,14 +2,14 @@
   "expo": {
     "name": "My Birthday Tracker",
     "slug": "birthday-reminder",
-    "version": "1.2.0",
+    "version": "1.2.2",
     "orientation": "portrait",
     "icon": "./assets/images/icon-mbt2.png",
     "scheme": "birthdayreminder",
     "userInterfaceStyle": "automatic",
     "splash": {
-      "image": "./assets/images/splash-mbt2.png",
-      "resizeMode": "cover",
+      "image": "./assets/images/splash_icon_android.png",
+      "resizeMode": "contain",
       "backgroundColor": "#0f172a"
     },
     "newArchEnabled": true,
@@ -17,9 +17,10 @@
       "supportsTablet": true,
       "bundleIdentifier": "app.mybirthdaytracker",
       "jsEngine": "hermes",
+      "buildNumber": "122",
       "splash": {
-        "image": "./assets/images/splash-mbt2.png",
-        "resizeMode": "cover",
+        "image": "./assets/images/splash_icon_ios.png",
+        "resizeMode": "contain",
         "backgroundColor": "#0f172a"
       }
     },
@@ -34,11 +35,11 @@
       ],
       "edgeToEdgeEnabled": true,
       "package": "com.pieter2frank.birthdayreminder",
-      "versionCode": 120,
+      "versionCode": 122,
       "jsEngine": "hermes",
       "splash": {
-        "image": "./assets/images/splash-mbt2.png",
-        "resizeMode": "cover",
+        "image": "./assets/splash_icon_android.png",
+        "resizeMode": "contain",
         "backgroundColor": "#0f172a"
       }
     },

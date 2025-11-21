@@ -42,12 +42,14 @@ export function TimePickerButton({
   onChange,
   styles,
   C,
+  themeVariant,
 }: {
   hour: number;
   minute: number;
   onChange: (h: number, m: number) => void;
   styles: Styles;
   C: ThemeColors;
+  themeVariant: 'light' | 'dark';
 }) {
   const [open, setOpen] = React.useState(false);
   const value = new Date();
@@ -78,6 +80,7 @@ export function TimePickerButton({
           mode="time"
           is24Hour
           display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+          {...(Platform.OS === 'ios' ? { themeVariant } : {})}
           onChange={(ev, date) => {
             setOpen(false);
             if (!date) return;
@@ -94,25 +97,38 @@ export function DatePickerField({
   valueISO,
   onChange,
   styles,
+  C,
+  themeVariant
 }: {
   valueISO: string;
   onChange: (iso: string) => void;
   styles: Styles;
+  C: ThemeColors;
+  themeVariant: 'light' | 'dark';
 }) {
   const [open, setOpen] = React.useState(false);
   const d = ymdToLocalNoonDate(valueISO);
 
   return (
     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-      <Pressable onPress={() => setOpen(true)} style={({ pressed }) => [styles.timeBtn, { opacity: pressed ? 0.6 : 1 }]}>
-        <Text style={styles.timeBtnText}>{toISODateLocal(d)}</Text>
+      <Pressable
+        onPress={() => setOpen(true)}
+        style={({ pressed }) => [
+          styles.timeBtn,
+          { opacity: pressed ? 0.6 : 1, borderColor: C.inputBorder },
+        ]}
+      >
+        <Text style={[styles.timeBtnText, { color: C.text }]}>
+          {toISODateLocal(d)}
+        </Text>
       </Pressable>
 
       {open && (
         <DateTimePicker
           value={d}
           mode="date"
-          display={Platform.OS === 'ios' ? 'inline' : 'default'}
+          display={Platform.OS === 'ios' ? 'compact' : 'default'}
+          {...(Platform.OS === 'ios' ? { themeVariant } : {})}
           onChange={(ev, date) => {
             setOpen(false);
             if (!date) return;
